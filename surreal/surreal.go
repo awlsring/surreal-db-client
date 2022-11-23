@@ -277,17 +277,31 @@ func (s *Surreal) GetItems(ctx context.Context, entity string) (interface{}, err
 	}
 }
 
-func (s *Surreal) Query(ctx context.Context, qs string) (interface{}, error) {
+type QueryResult struct {
+	Time string `json:"time"`
+	Status string `json:"status"`
+	Results []interface{} `json:"result"`
+}
+
+func (s *Surreal) Query(ctx context.Context, qs string) (QueryResult, error) {
 	c := make(chan interface{})
 
 	go s.query(qs, c)
 
+	var blob interface{}
 	select {
 	case <-ctx.Done():
-		return nil, fmt.Errorf("timeout hit")
+		return QueryResult{}, fmt.Errorf("timeout hit")
 	case result := <-c:
-		return result, nil
+		blob = result
 	}
+
+	var qr QueryResult
+	err := Unmarshal(blob, &qr)
+	if err != nil {
+		return QueryResult{}, err 
+	}
+	return qr, nil
 }
 
 func (s *Surreal) query(qs string, c chan interface{}) {
