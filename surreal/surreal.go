@@ -113,6 +113,10 @@ func New(config SurrealConfig) (*Surreal, error) {
 	return s, nil
 }
 
+func (s *Surreal) Close() {
+	s.Client.Close()
+}
+
 func (s *Surreal) Ping() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
